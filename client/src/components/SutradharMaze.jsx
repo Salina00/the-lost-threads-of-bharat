@@ -1409,13 +1409,13 @@ const SutradharMaze = ({ onBackToDashboard }) => {
           </div>
 
           {/* Canvas Wrapper */}
-          <div className="relative border-x border-b border-royal-blue-light p-1 rounded-b-lg shadow-2xl"
+          <div className="relative w-full max-w-[736px] border-x border-b border-royal-blue-light p-1 rounded-b-lg shadow-2xl overflow-hidden"
                style={{ background: THEME[mapTheme]?.bg || '#0a0405' }}>
             <canvas
               ref={canvasRef}
               width={736}
               height={544}
-              className="block rounded"
+              className="block rounded w-full h-auto object-contain mx-auto"
               style={{ background: THEME[mapTheme]?.bg || '#0a0405' }}
             />
 
