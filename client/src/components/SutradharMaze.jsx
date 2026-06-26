@@ -3,65 +3,275 @@ import axios from 'axios';
 import { AuthContext, API_URL } from '../context/AuthContext';
 import { Heart, Coins, Gem, Zap, Shield, Play, RotateCcw } from 'lucide-react';
 
+// ─── FALLBACK QUESTIONS (used when backend API is unreachable e.g. on Vercel
+//     without VITE_API_URL configured) ────────────────────────────────────────
+const FALLBACK_QUESTIONS = [
+  {
+    question: 'Which ancient Indian stepwell is located in Patan, Gujarat?',
+    options: ['Rani ki Vav', 'Chand Baori', 'Hampi Vav', 'Adalaj Vav'],
+    answer: 'Rani ki Vav',
+    category: 'heritage_sites',
+  },
+  {
+    question: 'The Gupta Empire is often called the "Golden Age" of India. Which field did NOT flourish during this period?',
+    options: ['Gunpowder and firearms', 'Mathematics and astronomy', 'Literature and poetry', 'Sculpture and painting'],
+    answer: 'Gunpowder and firearms',
+    category: 'history',
+  },
+  {
+    question: 'Which Chola king commissioned the famous Brihadisvara Temple at Thanjavur?',
+    options: ['Rajaraja I', 'Rajendra I', 'Kulottunga I', 'Vikramaditya II'],
+    answer: 'Rajaraja I',
+    category: 'architecture',
+  },
+  {
+    question: 'What does the Sanskrit term "Dharma" broadly mean?',
+    options: ['Cosmic order and moral duty', 'Devotion to a deity', 'The cycle of rebirth', 'The concept of non-violence'],
+    answer: 'Cosmic order and moral duty',
+    category: 'philosophy',
+  },
+  {
+    question: 'The Mauryan Emperor Ashoka converted to which religion after the Kalinga War?',
+    options: ['Buddhism', 'Jainism', 'Hinduism', 'Zoroastrianism'],
+    answer: 'Buddhism',
+    category: 'history',
+  },
+  {
+    question: 'Nalanda University, one of the world\'s first universities, was located in which modern-day Indian state?',
+    options: ['Bihar', 'Uttar Pradesh', 'Bengal', 'Odisha'],
+    answer: 'Bihar',
+    category: 'education',
+  },
+  {
+    question: 'The concept of "Zero" as a number was formally developed by which Indian mathematician?',
+    options: ['Brahmagupta', 'Aryabhata', 'Bhaskara II', 'Pingala'],
+    answer: 'Brahmagupta',
+    category: 'science',
+  },
+  {
+    question: 'Bharatanatyam, one of India\'s oldest classical dance forms, originates from which state?',
+    options: ['Tamil Nadu', 'Kerala', 'Andhra Pradesh', 'Karnataka'],
+    answer: 'Tamil Nadu',
+    category: 'arts',
+  },
+  {
+    question: 'Which ancient text is considered the world\'s oldest surviving epic poem?',
+    options: ['Mahabharata', 'Ramayana', 'Rigveda', 'Arthashastra'],
+    answer: 'Mahabharata',
+    category: 'literature',
+  },
+  {
+    question: 'The "Silk Road" connected ancient India to which region at its western end?',
+    options: ['Mediterranean and Rome', 'Egypt and Carthage', 'Persia only', 'Arabia and Ethiopia'],
+    answer: 'Mediterranean and Rome',
+    category: 'trade',
+  },
+  // ── 20 NEW QUESTIONS ────────────────────────────────────────────────────────
+  {
+    question: 'Which Indian astronomer first proposed that the Earth rotates on its own axis?',
+    options: ['Aryabhata', 'Brahmagupta', 'Varahamihira', 'Bhaskara I'],
+    answer: 'Aryabhata',
+    category: 'science',
+  },
+  {
+    question: 'The Ajanta Caves in Maharashtra are famous for their paintings depicting the life of whom?',
+    options: ['Lord Buddha', 'Lord Shiva', 'Lord Vishnu', 'Emperor Ashoka'],
+    answer: 'Lord Buddha',
+    category: 'heritage_sites',
+  },
+  {
+    question: 'Which ancient Indian text authored by Chanakya (Kautilya) deals with statecraft and political strategy?',
+    options: ['Arthashastra', 'Manusmriti', 'Nitisara', 'Panchatantra'],
+    answer: 'Arthashastra',
+    category: 'literature',
+  },
+  {
+    question: 'The Indus Valley Civilization\'s largest known city was:',
+    options: ['Mohenjo-daro', 'Harappa', 'Dholavira', 'Lothal'],
+    answer: 'Mohenjo-daro',
+    category: 'history',
+  },
+  {
+    question: 'Which classical language of India is considered the mother of many South Asian languages?',
+    options: ['Sanskrit', 'Pali', 'Prakrit', 'Tamil'],
+    answer: 'Sanskrit',
+    category: 'language',
+  },
+  {
+    question: 'The Kathakali dance form originates from which Indian state?',
+    options: ['Kerala', 'Tamil Nadu', 'Odisha', 'Manipur'],
+    answer: 'Kerala',
+    category: 'arts',
+  },
+  {
+    question: 'Who wrote the ancient Indian treatise on medicine called "Charaka Samhita"?',
+    options: ['Charaka', 'Sushruta', 'Dhanvantari', 'Vagbhata'],
+    answer: 'Charaka',
+    category: 'science',
+  },
+  {
+    question: 'The famous Iron Pillar of Delhi, which has not rusted for over 1600 years, was erected during which empire?',
+    options: ['Gupta Empire', 'Mauryan Empire', 'Kushan Empire', 'Pallava Kingdom'],
+    answer: 'Gupta Empire',
+    category: 'science',
+  },
+  {
+    question: 'Which Mughal emperor commissioned the building of the Taj Mahal?',
+    options: ['Shah Jahan', 'Akbar', 'Jahangir', 'Aurangzeb'],
+    answer: 'Shah Jahan',
+    category: 'architecture',
+  },
+  {
+    question: 'The sacred text "Bhagavad Gita" is a part of which larger epic?',
+    options: ['Mahabharata', 'Ramayana', 'Puranas', 'Upanishads'],
+    answer: 'Mahabharata',
+    category: 'literature',
+  },
+  {
+    question: 'Which ancient Indian port city was a major hub for maritime trade with Rome and Southeast Asia?',
+    options: ['Lothal', 'Sopara', 'Tamralipta', 'Bharuch'],
+    answer: 'Lothal',
+    category: 'trade',
+  },
+  {
+    question: 'The Hampi ruins, a UNESCO World Heritage Site, was the capital of which empire?',
+    options: ['Vijayanagara Empire', 'Chola Empire', 'Rashtrakuta Empire', 'Pallava Kingdom'],
+    answer: 'Vijayanagara Empire',
+    category: 'heritage_sites',
+  },
+  {
+    question: 'Which Indian philosopher founded the Advaita Vedanta school of philosophy?',
+    options: ['Adi Shankaracharya', 'Ramanuja', 'Madhvacharya', 'Nimbarka'],
+    answer: 'Adi Shankaracharya',
+    category: 'philosophy',
+  },
+  {
+    question: 'The ancient game of chess (Chaturanga) is believed to have originated in which country?',
+    options: ['India', 'Persia', 'China', 'Arabia'],
+    answer: 'India',
+    category: 'culture',
+  },
+  {
+    question: 'Which river is considered the most sacred in Hinduism?',
+    options: ['Ganga', 'Yamuna', 'Saraswati', 'Godavari'],
+    answer: 'Ganga',
+    category: 'culture',
+  },
+  {
+    question: 'The Ellora Caves contain temples carved for three different religions. Which three?',
+    options: ['Hinduism, Buddhism, Jainism', 'Hinduism, Buddhism, Islam', 'Buddhism, Jainism, Sikhism', 'Hinduism, Jainism, Zoroastrianism'],
+    answer: 'Hinduism, Buddhism, Jainism',
+    category: 'heritage_sites',
+  },
+  {
+    question: 'Panini, the ancient Sanskrit grammarian, wrote which foundational grammar text?',
+    options: ['Ashtadhyayi', 'Nirukta', 'Vakyapadiya', 'Mahabhashya'],
+    answer: 'Ashtadhyayi',
+    category: 'language',
+  },
+  {
+    question: 'The "Panchatantra", a collection of ancient Indian fables, was written for what purpose?',
+    options: ['To teach princes wisdom and statecraft', 'To record Vedic hymns', 'To document trade routes', 'To catalog medical remedies'],
+    answer: 'To teach princes wisdom and statecraft',
+    category: 'literature',
+  },
+  {
+    question: 'The ancient surgical text "Sushruta Samhita" describes which pioneering medical procedure?',
+    options: ['Rhinoplasty (nose reconstruction)', 'Open heart surgery', 'Bone transplantation', 'Eye cataract removal'],
+    answer: 'Rhinoplasty (nose reconstruction)',
+    category: 'science',
+  },
+  {
+    question: 'Which dynasty built the Shore Temple at Mahabalipuram, a UNESCO World Heritage Site?',
+    options: ['Pallava', 'Chola', 'Pandya', 'Chalukya'],
+    answer: 'Pallava',
+    category: 'architecture',
+  },
+];
+
+// Fisher-Yates shuffle for truly random question order each game session
+const _shuffled = (() => {
+  const arr = [...FALLBACK_QUESTIONS];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+})();
+let _fallbackIndex = 0;
+
+// Cycles through all 30 questions in shuffled order before repeating
+const getRandomFallbackQuestion = () => {
+  if (_fallbackIndex >= _shuffled.length) {
+    _fallbackIndex = 0;
+    // Re-shuffle on wraparound so repetition order changes
+    for (let i = _shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [_shuffled[i], _shuffled[j]] = [_shuffled[j], _shuffled[i]];
+    }
+  }
+  return _shuffled[_fallbackIndex++];
+};
+
 // ─── MAP DATA ────────────────────────────────────────────────────────────────
 // 1=wall  0=coin  2=memory-fragment  3=diamond  9=empty-path
 const MAPS = {
   stepwell: [
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,9,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,2,1],
-    [1,0,1,1,0,1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1],
-    [1,0,1,1,0,0,0,1,2,0,0,0,0,0,2,1,0,0,0,1,1,0,1],
-    [1,0,0,0,0,1,1,1,0,1,1,9,1,1,0,1,1,1,0,0,0,0,1],
-    [1,1,1,1,0,1,0,0,0,1,9,9,9,1,0,0,0,1,0,1,1,1,1],
-    [1,0,0,1,0,1,0,1,0,1,1,9,1,1,0,1,0,1,0,1,0,0,1],
-    [9,0,0,0,0,0,0,1,0,0,9,9,9,0,0,1,0,0,0,0,0,0,9],
-    [1,0,1,1,1,1,0,1,1,1,1,9,1,1,1,1,0,1,1,1,1,0,1],
-    [1,0,0,0,0,1,0,0,0,0,1,9,1,0,0,0,0,1,0,0,0,0,1],
-    [1,1,1,0,0,1,1,1,1,0,1,0,1,0,1,1,1,1,0,0,1,1,1],
-    [1,2,0,0,0,0,0,0,1,0,0,3,0,0,1,0,0,0,0,0,0,2,1],
-    [1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1],
-    [1,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1],
-    [1,0,1,0,1,0,1,1,1,1,0,1,0,1,1,1,1,0,1,0,1,0,1],
-    [1,2,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,2,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 9, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 1],
+    [1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
+    [1, 0, 1, 1, 0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 9, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 9, 9, 9, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1],
+    [1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 9, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1],
+    [9, 0, 0, 0, 0, 0, 0, 1, 0, 0, 9, 9, 9, 0, 0, 1, 0, 0, 0, 0, 0, 0, 9],
+    [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 9, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 9, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    [1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1],
+    [1, 2, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 0, 0, 1, 0, 0, 0, 0, 0, 0, 2, 1],
+    [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+    [1, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
   ],
   fort: [
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,9,0,0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,1,0,0,2,1],
-    [1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,1,0,1,0,1],
-    [1,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1],
-    [1,0,1,1,1,0,1,0,1,1,1,9,1,1,1,0,1,0,1,1,1,0,1],
-    [1,0,0,0,1,0,0,0,1,9,9,9,9,9,1,0,0,0,1,0,0,0,1],
-    [1,1,1,0,1,1,1,0,1,9,1,1,1,9,1,0,1,1,1,0,1,1,1],
-    [1,2,0,0,0,0,1,0,0,9,1,9,1,9,0,0,1,0,0,0,0,2,1],
-    [1,1,1,1,1,0,1,1,0,9,1,9,1,9,0,1,1,0,1,1,1,1,1],
-    [1,0,0,0,1,0,1,1,0,9,9,9,9,9,0,1,1,0,1,0,0,0,1],
-    [1,0,1,0,1,0,0,0,0,1,1,1,1,1,0,0,0,0,1,0,1,0,1],
-    [1,0,1,0,1,1,1,1,0,0,0,3,0,0,0,1,1,1,1,0,1,0,1],
-    [1,0,1,0,0,0,0,1,1,1,1,0,1,1,1,1,0,0,0,0,1,0,1],
-    [1,2,1,1,1,0,0,0,0,0,1,0,1,0,0,0,0,0,1,1,1,2,1],
-    [1,0,0,0,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,0,0,0,1],
-    [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 9, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 2, 1],
+    [1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 9, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 9, 9, 9, 9, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+    [1, 1, 1, 0, 1, 1, 1, 0, 1, 9, 1, 1, 1, 9, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+    [1, 2, 0, 0, 0, 0, 1, 0, 0, 9, 1, 9, 1, 9, 0, 0, 1, 0, 0, 0, 0, 2, 1],
+    [1, 1, 1, 1, 1, 0, 1, 1, 0, 9, 1, 9, 1, 9, 0, 1, 1, 0, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 1, 0, 1, 1, 0, 9, 9, 9, 9, 9, 0, 1, 1, 0, 1, 0, 0, 0, 1],
+    [1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 3, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1],
+    [1, 2, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 2, 1],
+    [1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1],
+    [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
   ],
   mandala: [
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,9,0,0,0,0,1,0,0,0,0,2,0,0,0,0,1,0,0,0,0,2,1],
-    [1,0,1,1,1,0,1,0,1,1,1,1,1,1,1,0,1,0,1,1,1,0,1],
-    [1,0,1,0,0,0,0,0,1,9,9,9,9,9,1,0,0,0,0,0,1,0,1],
-    [1,0,1,0,1,1,1,0,1,9,1,1,1,9,1,0,1,1,1,0,1,0,1],
-    [1,0,0,0,1,2,1,0,1,9,1,9,1,9,1,0,1,2,1,0,0,0,1],
-    [1,1,1,0,1,0,1,0,1,9,1,9,1,9,1,0,1,0,1,0,1,1,1],
-    [1,0,0,0,1,0,1,0,9,9,9,9,9,9,9,0,1,0,1,0,0,0,1],
-    [1,3,0,0,0,0,0,0,0,9,9,9,9,9,0,0,0,0,0,0,0,3,1],
-    [1,0,0,0,1,0,1,0,9,9,9,9,9,9,9,0,1,0,1,0,0,0,1],
-    [1,1,1,0,1,0,1,0,1,9,1,9,1,9,1,0,1,0,1,0,1,1,1],
-    [1,0,0,0,1,2,1,0,1,9,1,9,1,9,1,0,1,2,1,0,0,0,1],
-    [1,0,1,0,1,1,1,0,1,9,1,1,1,9,1,0,1,1,1,0,1,0,1],
-    [1,0,1,0,0,0,0,0,1,9,9,9,9,9,1,0,0,0,0,0,1,0,1],
-    [1,0,1,1,1,0,1,0,1,1,1,1,1,1,1,0,1,0,1,1,1,0,1],
-    [1,2,0,0,0,0,1,0,0,0,0,2,0,0,0,0,1,0,0,0,0,2,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 9, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2, 1],
+    [1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 0, 0, 1, 9, 9, 9, 9, 9, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 1, 1, 0, 1, 9, 1, 1, 1, 9, 1, 0, 1, 1, 1, 0, 1, 0, 1],
+    [1, 0, 0, 0, 1, 2, 1, 0, 1, 9, 1, 9, 1, 9, 1, 0, 1, 2, 1, 0, 0, 0, 1],
+    [1, 1, 1, 0, 1, 0, 1, 0, 1, 9, 1, 9, 1, 9, 1, 0, 1, 0, 1, 0, 1, 1, 1],
+    [1, 0, 0, 0, 1, 0, 1, 0, 9, 9, 9, 9, 9, 9, 9, 0, 1, 0, 1, 0, 0, 0, 1],
+    [1, 3, 0, 0, 0, 0, 0, 0, 0, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 3, 1],
+    [1, 0, 0, 0, 1, 0, 1, 0, 9, 9, 9, 9, 9, 9, 9, 0, 1, 0, 1, 0, 0, 0, 1],
+    [1, 1, 1, 0, 1, 0, 1, 0, 1, 9, 1, 9, 1, 9, 1, 0, 1, 0, 1, 0, 1, 1, 1],
+    [1, 0, 0, 0, 1, 2, 1, 0, 1, 9, 1, 9, 1, 9, 1, 0, 1, 2, 1, 0, 0, 0, 1],
+    [1, 0, 1, 0, 1, 1, 1, 0, 1, 9, 1, 1, 1, 9, 1, 0, 1, 1, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 0, 0, 1, 9, 9, 9, 9, 9, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+    [1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
   ]
 };
 
@@ -74,12 +284,12 @@ const GHOST_SPAWNS = {
     { x: 12, y: 5, color: '#10b981', baseSpeed: 0.040 },
   ],
   fort: [
-    { x: 9,  y: 7, color: '#ec4899', baseSpeed: 0.035 },
+    { x: 9, y: 7, color: '#ec4899', baseSpeed: 0.035 },
     { x: 11, y: 7, color: '#a855f7', baseSpeed: 0.045 },
     { x: 13, y: 7, color: '#10b981', baseSpeed: 0.040 },
   ],
   mandala: [
-    { x: 9,  y: 8, color: '#ec4899', baseSpeed: 0.035 },
+    { x: 9, y: 8, color: '#ec4899', baseSpeed: 0.035 },
     { x: 11, y: 8, color: '#a855f7', baseSpeed: 0.045 },
     { x: 13, y: 8, color: '#10b981', baseSpeed: 0.040 },
   ],
@@ -110,7 +320,7 @@ const getSkinProperties = (skinId) => {
 // Hex colour → "r,g,b" for rgba() usage
 const hexToRgb = (hex) => {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return m ? `${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)}` : '255,255,255';
+  return m ? `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}` : '255,255,255';
 };
 
 // ─── LEVEL MAP THEME PROGRESSION ─────────────────────────────────────────────
@@ -129,8 +339,8 @@ const THEME_LEVELS = {
 // ─── THEME CONFIGS ───────────────────────────────────────────────────────────
 const THEME = {
   stepwell: { bg: '#020a18', wallFill: '#0c1d3e', wallBorder: 'rgba(212,175,55,0.5)', wallAccent: 'rgba(212,175,55,0.2)' },
-  fort:     { bg: '#0a0206', wallFill: '#2e0e10', wallBorder: 'rgba(160,80,40,0.55)', wallAccent: 'rgba(160,80,40,0.22)' },
-  mandala:  { bg: '#060412', wallFill: '#11103e', wallBorder: 'rgba(212,175,55,0.85)', wallAccent: 'rgba(212,175,55,0.32)' },
+  fort: { bg: '#0a0206', wallFill: '#2e0e10', wallBorder: 'rgba(160,80,40,0.55)', wallAccent: 'rgba(160,80,40,0.22)' },
+  mandala: { bg: '#060412', wallFill: '#11103e', wallBorder: 'rgba(212,175,55,0.85)', wallAccent: 'rgba(212,175,55,0.32)' },
 };
 
 // ─── CANVAS DRAWING PRIMITIVES ────────────────────────────────────────────────
@@ -156,9 +366,9 @@ function drawWall(ctx, cx, cy, TS, theme) {
     ctx.strokeRect(cx + 1, cy + 1, TS - 2, TS - 2);
     ctx.strokeStyle = t.wallAccent;
     ctx.beginPath();
-    ctx.moveTo(cx,          cy);         ctx.lineTo(cx + TS, cy + TS);
-    ctx.moveTo(cx + TS*0.5, cy);         ctx.lineTo(cx + TS, cy + TS*0.5);
-    ctx.moveTo(cx,          cy + TS*0.5);ctx.lineTo(cx + TS*0.5, cy + TS);
+    ctx.moveTo(cx, cy); ctx.lineTo(cx + TS, cy + TS);
+    ctx.moveTo(cx + TS * 0.5, cy); ctx.lineTo(cx + TS, cy + TS * 0.5);
+    ctx.moveTo(cx, cy + TS * 0.5); ctx.lineTo(cx + TS * 0.5, cy + TS);
     ctx.stroke();
   } else if (theme === 'mandala') {
     // Bright gold border + inner lotus/diamond motif (temple wall)
@@ -167,10 +377,10 @@ function drawWall(ctx, cx, cy, TS, theme) {
     ctx.strokeRect(cx + 1, cy + 1, TS - 2, TS - 2);
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(cx + TS/2, cy + 3);
-    ctx.lineTo(cx + TS - 3, cy + TS/2);
-    ctx.lineTo(cx + TS/2, cy + TS - 3);
-    ctx.lineTo(cx + 3,    cy + TS/2);
+    ctx.moveTo(cx + TS / 2, cy + 3);
+    ctx.lineTo(cx + TS - 3, cy + TS / 2);
+    ctx.lineTo(cx + TS / 2, cy + TS - 3);
+    ctx.lineTo(cx + 3, cy + TS / 2);
     ctx.closePath();
     ctx.strokeStyle = t.wallAccent;
     ctx.stroke();
@@ -181,7 +391,7 @@ function drawCoin(ctx, cx, cy, TS, frame) {
   const pulse = 0.72 + 0.28 * Math.sin(frame * 0.13);
   const r = 4 * pulse;
   ctx.beginPath();
-  ctx.arc(cx + TS/2, cy + TS/2, r, 0, Math.PI * 2);
+  ctx.arc(cx + TS / 2, cy + TS / 2, r, 0, Math.PI * 2);
   ctx.fillStyle = '#d4af37';
   ctx.shadowColor = 'rgba(212,175,55,0.85)';
   ctx.shadowBlur = 7 * pulse;
@@ -189,7 +399,7 @@ function drawCoin(ctx, cx, cy, TS, frame) {
   ctx.shadowBlur = 0;
   // Shine highlight
   ctx.beginPath();
-  ctx.arc(cx + TS/2 - 1, cy + TS/2 - 1, r * 0.38, 0, Math.PI * 2);
+  ctx.arc(cx + TS / 2 - 1, cy + TS / 2 - 1, r * 0.38, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255,253,200,0.65)';
   ctx.fill();
 }
@@ -204,7 +414,7 @@ function drawFragment(ctx, cx, cy, TS, frame) {
 
   // Top & bottom caps (rolled ends of scroll)
   ctx.fillStyle = `rgba(175,135,72,${pulse})`;
-  ctx.fillRect(cx + 8, cy + 4  + floatY, 16, 4);
+  ctx.fillRect(cx + 8, cy + 4 + floatY, 16, 4);
   ctx.fillRect(cx + 8, cy + 24 + floatY, 16, 4);
 
   // Heritage gold ribbon band
@@ -225,10 +435,10 @@ function drawDiamond(ctx, cx, cy, TS, frame) {
   const sparkleOn = Math.sin(frame * 0.22) > 0.65;
 
   ctx.beginPath();
-  ctx.moveTo(cx + TS/2,    cy + 6);
-  ctx.lineTo(cx + TS - 6,  cy + TS/2);
-  ctx.lineTo(cx + TS/2,    cy + TS - 6);
-  ctx.lineTo(cx + 6,       cy + TS/2);
+  ctx.moveTo(cx + TS / 2, cy + 6);
+  ctx.lineTo(cx + TS - 6, cy + TS / 2);
+  ctx.lineTo(cx + TS / 2, cy + TS - 6);
+  ctx.lineTo(cx + 6, cy + TS / 2);
   ctx.closePath();
   ctx.fillStyle = `rgba(34,211,238,${pulse})`;
   ctx.shadowColor = 'rgba(34,211,238,0.95)';
@@ -238,17 +448,17 @@ function drawDiamond(ctx, cx, cy, TS, frame) {
 
   // Inner facet highlight
   ctx.beginPath();
-  ctx.moveTo(cx + TS/2,    cy + 10);
-  ctx.lineTo(cx + TS - 10, cy + TS/2);
-  ctx.lineTo(cx + TS/2,    cy + TS - 10);
-  ctx.lineTo(cx + 10,      cy + TS/2);
+  ctx.moveTo(cx + TS / 2, cy + 10);
+  ctx.lineTo(cx + TS - 10, cy + TS / 2);
+  ctx.lineTo(cx + TS / 2, cy + TS - 10);
+  ctx.lineTo(cx + 10, cy + TS / 2);
   ctx.closePath();
   ctx.fillStyle = 'rgba(255,255,255,0.22)';
   ctx.fill();
 
   // Four-point sparkle
   if (sparkleOn) {
-    const sx = cx + TS/2, sy = cy + TS/2;
+    const sx = cx + TS / 2, sy = cy + TS / 2;
     ctx.strokeStyle = 'rgba(255,255,255,0.85)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -307,9 +517,9 @@ function drawSutradhar(ctx, px, py, style, hasShield, speedBoost, frame) {
   ctx.fillStyle = '#fbbf24'; // Majestic gold sash
   ctx.beginPath();
   ctx.moveTo(px - 11, py - 1);
-  ctx.lineTo(px + 4,  py - 1);
+  ctx.lineTo(px + 4, py - 1);
   ctx.lineTo(px + 11, py + 8);
-  ctx.lineTo(px - 4,  py + 8);
+  ctx.lineTo(px - 4, py + 8);
   ctx.closePath();
   ctx.fill();
   ctx.restore();
@@ -379,9 +589,9 @@ function drawSutradhar(ctx, px, py, style, hasShield, speedBoost, frame) {
   const spires = [
     { ox: -6, h: 5 },
     { ox: -3, h: 8 },
-    { ox: 0,  h: 11 }, // Central spire (highest)
-    { ox: 3,  h: 8 },
-    { ox: 6,  h: 5 }
+    { ox: 0, h: 11 }, // Central spire (highest)
+    { ox: 3, h: 8 },
+    { ox: 6, h: 5 }
   ];
   spires.forEach(s => {
     ctx.beginPath();
@@ -433,15 +643,15 @@ const getGhostTarget = (ghost, player, state) => {
 // Inspired by Indian shamanistic spirits — three eyes, wispy smoky tendrils,
 // and a Sanskrit-swirl pattern on the body.
 function drawVismarana(ctx, gx, gy, color, frame, idx, active, enraged) {
-  const wave  = Math.sin(frame * 0.09 + idx * 1.3);
+  const wave = Math.sin(frame * 0.09 + idx * 1.3);
   const hover = Math.sin(frame * 0.065 + idx * 0.9) * 2;
-  const fy    = gy + hover;
-  
+  const fy = gy + hover;
+
   const displayColor = enraged ? '#ef4444' : color;
-  const rgb   = hexToRgb(displayColor);
+  const rgb = hexToRgb(displayColor);
 
   ctx.save();
-  
+
   if (!active && !enraged) {
     ctx.globalAlpha = 0.45; // Dormant spirits are translucent
   }
@@ -459,13 +669,13 @@ function drawVismarana(ctx, gx, gy, color, frame, idx, active, enraged) {
   ctx.beginPath();
   ctx.arc(gx, fy - 3, 11, Math.PI, 0, false);
   // Wispy tendrils at the bottom — each wavers independently
-  ctx.lineTo(gx + 11, fy + 9  + wave * 1.8);
-  ctx.lineTo(gx + 7,  fy + 6);
-  ctx.lineTo(gx + 4,  fy + 11 - wave * 1.2);
-  ctx.lineTo(gx + 0,  fy + 7);
-  ctx.lineTo(gx - 4,  fy + 11 + wave * 1.2);
-  ctx.lineTo(gx - 7,  fy + 6);
-  ctx.lineTo(gx - 11, fy + 9  - wave * 1.8);
+  ctx.lineTo(gx + 11, fy + 9 + wave * 1.8);
+  ctx.lineTo(gx + 7, fy + 6);
+  ctx.lineTo(gx + 4, fy + 11 - wave * 1.2);
+  ctx.lineTo(gx + 0, fy + 7);
+  ctx.lineTo(gx - 4, fy + 11 + wave * 1.2);
+  ctx.lineTo(gx - 7, fy + 6);
+  ctx.lineTo(gx - 11, fy + 9 - wave * 1.8);
   ctx.closePath();
   ctx.fillStyle = displayColor;
   ctx.shadowColor = displayColor;
@@ -537,7 +747,7 @@ function drawVismarana(ctx, gx, gy, color, frame, idx, active, enraged) {
   for (let i = 0; i < 3; i++) {
     const sx = gx + (i - 1) * 6;
     const sy = fy + 13 + i * 3 + wave * (i % 2 === 0 ? 1.2 : -1.2);
-    const a  = 0.28 - i * 0.08;
+    const a = 0.28 - i * 0.08;
     ctx.beginPath();
     ctx.arc(sx, sy, 2 - i * 0.4, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(${rgb},${a})`;
@@ -558,31 +768,31 @@ const SutradharMaze = ({ onBackToDashboard }) => {
   const mapTheme = LEVEL_THEMES[level] || 'stepwell';
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [score, setScore]         = useState(0);
-  const [coinsEarned, setCoinsEarned]       = useState(0);
+  const [score, setScore] = useState(0);
+  const [coinsEarned, setCoinsEarned] = useState(0);
   const [diamondsEarned, setDiamondsEarned] = useState(0);
   const [fragmentsCollected, setFragmentsCollected] = useState(0);
   const [hearts, setHearts] = useState(5);
   const [isGameOver, setIsGameOver] = useState(false);
-  const [isGameWon,  setIsGameWon]  = useState(false);
+  const [isGameWon, setIsGameWon] = useState(false);
 
   // Question overlay
-  const [questionModal,    setQuestionModal]    = useState(false);
-  const [currentQuestion,  setCurrentQuestion]  = useState(null);
-  const [questionLoading,  setQuestionLoading]  = useState(false);
-  const [selectedOption,   setSelectedOption]   = useState(null);
-  const [questionTimer,    setQuestionTimer]    = useState(15);
+  const [questionModal, setQuestionModal] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [questionLoading, setQuestionLoading] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [questionTimer, setQuestionTimer] = useState(15);
   const [questionFeedback, setQuestionFeedback] = useState(null);
 
   // Power-ups
-  const [speedBoost,   setSpeedBoost]   = useState(false);
+  const [speedBoost, setSpeedBoost] = useState(false);
   const [shieldActive, setShieldActive] = useState(false);
 
   // ── Refs to fix stale-closure bugs in animation loop & timeouts ─────────────
-  const scoreRef    = useRef(0);
-  const coinsRef    = useRef(0);
+  const scoreRef = useRef(0);
+  const coinsRef = useRef(0);
   const diamondsRef = useRef(0);
-  const heartsRef   = useRef(5);
+  const heartsRef = useRef(5);
 
   const questionTimerInterval = useRef(null);
 
@@ -687,9 +897,9 @@ const SutradharMaze = ({ onBackToDashboard }) => {
   // ── Initialize level layout ────────────────────────────────────────────────
   const initLevelData = () => {
     const currentTheme = LEVEL_THEMES[level] || 'stepwell';
-    gameStateRef.current.grid   = JSON.parse(JSON.stringify(MAPS[currentTheme]));
+    gameStateRef.current.grid = JSON.parse(JSON.stringify(MAPS[currentTheme]));
     gameStateRef.current.player = { x: 1, y: 1, targetX: 1, targetY: 1, speed: 0.1 };
-    gameStateRef.current.frame  = 0;
+    gameStateRef.current.frame = 0;
     gameStateRef.current.invincibilityTimer = 0;
     gameStateRef.current.activeKeys = {};
     gameStateRef.current.particles = [];
@@ -736,10 +946,10 @@ const SutradharMaze = ({ onBackToDashboard }) => {
   // ── Reset whole game (Level 1 start) ───────────────────────────────────────
   const resetGameData = () => {
     setLevel(1);
-    scoreRef.current    = 0;
-    coinsRef.current    = 0;
+    scoreRef.current = 0;
+    coinsRef.current = 0;
     diamondsRef.current = 0;
-    heartsRef.current   = 5;
+    heartsRef.current = 5;
 
     setScore(0);
     setCoinsEarned(0);
@@ -780,7 +990,7 @@ const SutradharMaze = ({ onBackToDashboard }) => {
     };
     const up = (e) => { delete gameStateRef.current.activeKeys[e.key]; };
     window.addEventListener('keydown', down);
-    window.addEventListener('keyup',   up);
+    window.addEventListener('keyup', up);
     return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
   }, [isPlaying, questionModal, isGameOver, isGameWon]);
 
@@ -798,7 +1008,7 @@ const SutradharMaze = ({ onBackToDashboard }) => {
 
     // ── UPDATE ──────────────────────────────────────────────────────────────
     const update = () => {
-      const state  = gameStateRef.current;
+      const state = gameStateRef.current;
       const player = state.player;
 
       // Tick invincibility, enrage, screen flash, and combo timers down
@@ -854,10 +1064,10 @@ const SutradharMaze = ({ onBackToDashboard }) => {
 
         let ndx = 0, ndy = 0;
         const keys = state.activeKeys;
-        if      (keys['ArrowUp']    || keys['w'] || keys['W']) ndy = -1;
-        else if (keys['ArrowDown']  || keys['s'] || keys['S']) ndy =  1;
-        else if (keys['ArrowLeft']  || keys['a'] || keys['A']) ndx = -1;
-        else if (keys['ArrowRight'] || keys['d'] || keys['D']) ndx =  1;
+        if (keys['ArrowUp'] || keys['w'] || keys['W']) ndy = -1;
+        else if (keys['ArrowDown'] || keys['s'] || keys['S']) ndy = 1;
+        else if (keys['ArrowLeft'] || keys['a'] || keys['A']) ndx = -1;
+        else if (keys['ArrowRight'] || keys['d'] || keys['D']) ndx = 1;
 
         if (ndx !== 0 || ndy !== 0) {
           const nx = player.x + ndx;
@@ -887,18 +1097,18 @@ const SutradharMaze = ({ onBackToDashboard }) => {
         baseAdd = 10;
         coinAdd = 1;
         itemType = 'coin';
-        spawnParticles(gx * TS + TS/2, gy * TS + TS/2, 'coin');
+        spawnParticles(gx * TS + TS / 2, gy * TS + TS / 2, 'coin');
       } else if (cell === 2) {
         state.grid[gy][gx] = 9;
         baseAdd = 50;
         itemType = 'fragment';
-        spawnParticles(gx * TS + TS/2, gy * TS + TS/2, 'fragment');
+        spawnParticles(gx * TS + TS / 2, gy * TS + TS / 2, 'fragment');
       } else if (cell === 3) {
         state.grid[gy][gx] = 9;
         baseAdd = 150;
         diamondAdd = 1;
         itemType = 'diamond';
-        spawnParticles(gx * TS + TS/2, gy * TS + TS/2, 'diamond');
+        spawnParticles(gx * TS + TS / 2, gy * TS + TS / 2, 'diamond');
       }
 
       if (baseAdd > 0) {
@@ -933,7 +1143,7 @@ const SutradharMaze = ({ onBackToDashboard }) => {
         if (state.comboCount > 1) {
           floatingMsg += ` (×${state.comboCount})`;
         }
-        spawnFloatingText(gx * TS + TS/2, gy * TS, floatingMsg, displayColor);
+        spawnFloatingText(gx * TS + TS / 2, gy * TS, floatingMsg, displayColor);
       }
 
       // ── Win condition: all fragments (2) and diamonds (3) collected ─────
@@ -1026,8 +1236,8 @@ const SutradharMaze = ({ onBackToDashboard }) => {
           } else if (shieldActive) {
             setShieldActive(false);
             state.invincibilityTimer = 60;
-            spawnParticles(player.x * TS + TS/2, player.y * TS + TS/2, 'diamond');
-            spawnFloatingText(player.x * TS + TS/2, player.y * TS, 'SHIELD BROKEN', '#22d3ee');
+            spawnParticles(player.x * TS + TS / 2, player.y * TS + TS / 2, 'diamond');
+            spawnFloatingText(player.x * TS + TS / 2, player.y * TS, 'SHIELD BROKEN', '#22d3ee');
           } else {
             state.screenFlashTimer = 15;
             setHearts(prev => {
@@ -1049,9 +1259,9 @@ const SutradharMaze = ({ onBackToDashboard }) => {
 
     // ── DRAW ────────────────────────────────────────────────────────────────
     const draw = () => {
-      const state  = gameStateRef.current;
+      const state = gameStateRef.current;
       const player = state.player;
-      const frame  = state.frame;
+      const frame = state.frame;
 
       // Theme-appropriate background
       ctx.fillStyle = THEME[mapTheme]?.bg || '#0a0405';
@@ -1066,9 +1276,9 @@ const SutradharMaze = ({ onBackToDashboard }) => {
       for (let r = 0; r < state.grid.length; r++) {
         for (let c = 0; c < state.grid[r].length; c++) {
           const tile = state.grid[r][c];
-          const cx   = c * TS;
-          const cy   = r * TS;
-          if      (tile === 0) drawCoin(ctx, cx, cy, TS, frame);
+          const cx = c * TS;
+          const cy = r * TS;
+          if (tile === 0) drawCoin(ctx, cx, cy, TS, frame);
           else if (tile === 2) drawFragment(ctx, cx, cy, TS, frame);
           else if (tile === 3) drawDiamond(ctx, cx, cy, TS, frame);
         }
@@ -1176,34 +1386,56 @@ const SutradharMaze = ({ onBackToDashboard }) => {
     setQuestionFeedback(null);
     setQuestionTimer(15);
 
-    try {
-      const res = await axios.get(`${API_URL}/questions/random?count=1`);
-      if (res.data.success && res.data.questions.length > 0) {
-        setCurrentQuestion(res.data.questions[0]);
-        setQuestionLoading(false);
-        setQuestionModal(true);
+    // Helper that starts the question timer once a question is ready
+    const startQuestion = (question) => {
+      setCurrentQuestion(question);
+      setQuestionLoading(false);
+      setQuestionModal(true);
 
-        clearInterval(questionTimerInterval.current);
-        questionTimerInterval.current = setInterval(() => {
-          setQuestionTimer(prev => {
-            if (prev <= 1) {
-              clearInterval(questionTimerInterval.current);
-              handleTriviaAnswer(null, true);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
+      clearInterval(questionTimerInterval.current);
+      questionTimerInterval.current = setInterval(() => {
+        setQuestionTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(questionTimerInterval.current);
+            handleTriviaAnswer(null, true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    };
+
+    // If VITE_API_URL is not configured (API_URL still points to localhost),
+    // skip the network call entirely and use the 30 built-in fallback questions.
+    // This ensures questions always appear instantly on Vercel even without the env var set.
+    const isLocalhost = API_URL.includes('localhost') || API_URL.includes('127.0.0.1');
+    if (isLocalhost) {
+      console.info('VITE_API_URL not configured — using built-in fallback question.');
+      startQuestion(getRandomFallbackQuestion());
+      return;
+    }
+
+    try {
+      // 1.5-second timeout: fast fallback if backend is slow/unreachable
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1500);
+
+      const res = await axios.get(`${API_URL}/questions/random?count=1`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (res.data.success && res.data.questions.length > 0) {
+        startQuestion(res.data.questions[0]);
       } else {
-        setQuestionLoading(false);
-        gameStateRef.current.isPausedForQuestion = false;
-        setIsPlaying(true);
+        // Backend returned but with no questions — use fallback
+        console.warn('No questions from API, using fallback question.');
+        startQuestion(getRandomFallbackQuestion());
       }
     } catch (err) {
-      console.error('Error fetching question:', err);
-      setQuestionLoading(false);
-      gameStateRef.current.isPausedForQuestion = false;
-      setIsPlaying(true);
+      // Network error, timeout, or API unreachable
+      console.warn('Question API unreachable — using fallback question. Error:', err.message);
+      startQuestion(getRandomFallbackQuestion());
     }
   };
 
@@ -1254,8 +1486,8 @@ const SutradharMaze = ({ onBackToDashboard }) => {
     setIsPlaying(false);
     try {
       await axios.post(`${API_URL}/user/game-over`, {
-        score:         scoreRef.current,
-        coinsEarned:   coinsRef.current,
+        score: scoreRef.current,
+        coinsEarned: coinsRef.current,
         diamondsEarned: diamondsRef.current,
         didWin: won,
       });
@@ -1315,11 +1547,10 @@ const SutradharMaze = ({ onBackToDashboard }) => {
                   <button
                     key={key}
                     onClick={() => setLevel(targetLvl)}
-                    className={`px-3 py-2 border rounded text-xs font-display transition-all leading-tight ${
-                      level === targetLvl
-                        ? 'bg-gold text-maroon-dark border-gold font-bold gold-glow'
-                        : 'bg-royal-blue-dark text-parchment border-royal-blue-light hover:border-gold'
-                    }`}
+                    className={`px-3 py-2 border rounded text-xs font-display transition-all leading-tight ${level === targetLvl
+                      ? 'bg-gold text-maroon-dark border-gold font-bold gold-glow'
+                      : 'bg-royal-blue-dark text-parchment border-royal-blue-light hover:border-gold'
+                      }`}
                   >
                     {label}
                   </button>
@@ -1426,7 +1657,7 @@ const SutradharMaze = ({ onBackToDashboard }) => {
 
           {/* Canvas Wrapper */}
           <div className="relative w-full max-w-[736px] border-x border-b border-royal-blue-light p-1 rounded-b-lg shadow-2xl overflow-hidden"
-               style={{ background: THEME[mapTheme]?.bg || '#0a0405' }}>
+            style={{ background: THEME[mapTheme]?.bg || '#0a0405' }}>
             <canvas
               ref={canvasRef}
               width={736}
@@ -1450,7 +1681,7 @@ const SutradharMaze = ({ onBackToDashboard }) => {
             <div className="flex justify-center gap-2 mt-4 md:hidden">
               <div className="grid grid-cols-3 gap-2 w-44">
                 <div></div>
-                <button 
+                <button
                   onMouseDown={() => { gameStateRef.current.activeKeys['ArrowUp'] = true; }}
                   onMouseUp={() => { delete gameStateRef.current.activeKeys['ArrowUp']; }}
                   onTouchStart={(e) => { e.preventDefault(); gameStateRef.current.activeKeys['ArrowUp'] = true; }}
@@ -1461,7 +1692,7 @@ const SutradharMaze = ({ onBackToDashboard }) => {
                 </button>
                 <div></div>
 
-                <button 
+                <button
                   onMouseDown={() => { gameStateRef.current.activeKeys['ArrowLeft'] = true; }}
                   onMouseUp={() => { delete gameStateRef.current.activeKeys['ArrowLeft']; }}
                   onTouchStart={(e) => { e.preventDefault(); gameStateRef.current.activeKeys['ArrowLeft'] = true; }}
@@ -1471,7 +1702,7 @@ const SutradharMaze = ({ onBackToDashboard }) => {
                   ◀
                 </button>
                 <div className="flex items-center justify-center text-xs text-parchment-dark font-display select-none">Keys</div>
-                <button 
+                <button
                   onMouseDown={() => { gameStateRef.current.activeKeys['ArrowRight'] = true; }}
                   onMouseUp={() => { delete gameStateRef.current.activeKeys['ArrowRight']; }}
                   onTouchStart={(e) => { e.preventDefault(); gameStateRef.current.activeKeys['ArrowRight'] = true; }}
@@ -1482,7 +1713,7 @@ const SutradharMaze = ({ onBackToDashboard }) => {
                 </button>
 
                 <div></div>
-                <button 
+                <button
                   onMouseDown={() => { gameStateRef.current.activeKeys['ArrowDown'] = true; }}
                   onMouseUp={() => { delete gameStateRef.current.activeKeys['ArrowDown']; }}
                   onTouchStart={(e) => { e.preventDefault(); gameStateRef.current.activeKeys['ArrowDown'] = true; }}
@@ -1506,9 +1737,8 @@ const SutradharMaze = ({ onBackToDashboard }) => {
                   <span className="text-gold font-display text-xs border border-gold/30 px-2 py-0.5 rounded capitalize">
                     {currentQuestion.category?.replace('_', ' ')}
                   </span>
-                  <span className={`text-sm font-bold font-display px-2 py-0.5 rounded ${
-                    questionTimer <= 5 ? 'text-red-500 animate-bounce' : 'text-gold'
-                  }`}>
+                  <span className={`text-sm font-bold font-display px-2 py-0.5 rounded ${questionTimer <= 5 ? 'text-red-500 animate-bounce' : 'text-gold'
+                    }`}>
                     ⏱ {questionTimer}s
                   </span>
                 </div>
@@ -1523,13 +1753,13 @@ const SutradharMaze = ({ onBackToDashboard }) => {
 
                 <div className="grid grid-cols-1 gap-3 w-full max-w-md mb-6">
                   {currentQuestion.options.map((opt, idx) => {
-                    const isSelected   = selectedOption === opt;
+                    const isSelected = selectedOption === opt;
                     const isCorrectOpt = opt === currentQuestion.answer;
                     let btnStyle = 'border-royal-blue-light hover:border-gold bg-royal-blue-dark text-parchment';
                     if (questionFeedback) {
-                      if (isCorrectOpt)      btnStyle = 'bg-emerald-800 border-emerald-400 text-white font-bold';
-                      else if (isSelected)   btnStyle = 'bg-red-800 border-red-400 text-white';
-                    } else if (isSelected)   btnStyle = 'border-gold bg-royal-blue text-gold font-semibold';
+                      if (isCorrectOpt) btnStyle = 'bg-emerald-800 border-emerald-400 text-white font-bold';
+                      else if (isSelected) btnStyle = 'bg-red-800 border-red-400 text-white';
+                    } else if (isSelected) btnStyle = 'border-gold bg-royal-blue text-gold font-semibold';
 
                     return (
                       <button
