@@ -1,6 +1,7 @@
-import React, { useContext, lazy, Suspense } from 'react';
+import React, { useContext, useState, lazy, Suspense } from 'react';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
+import IntroVideo from './components/IntroVideo';
 import './App.css';
 
 const Auth = lazy(() => import('./pages/Auth'));
@@ -8,6 +9,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 
 const AppContent = () => {
   const { user, loading } = useContext(AuthContext);
+  const [introFinished, setIntroFinished] = useState(false);
 
   if (loading) {
     return (
@@ -16,6 +18,10 @@ const AppContent = () => {
         <p className="text-xs uppercase tracking-widest animate-pulse">Consulting the Sutradhar...</p>
       </div>
     );
+  }
+
+  if (user && !introFinished) {
+    return <IntroVideo onFinished={() => setIntroFinished(true)} />;
   }
 
   return (
