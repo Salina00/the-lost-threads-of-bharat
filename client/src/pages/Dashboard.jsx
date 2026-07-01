@@ -4,7 +4,7 @@ import SutradharGuide from '../components/SutradharGuide';
 import { Coins, Gem, LogOut, Home, ShoppingBag, FolderOpen, BarChart3, User2 } from 'lucide-react';
 
 const SutradharMaze = lazy(() => import('../components/SutradharMaze'));
-const ChorSipahi = lazy(() => import('../components/ChorSipahi'));
+const LostArtifactHunt = lazy(() => import('../components/LostArtifactHunt'));
 const ShopTab = lazy(() => import('../components/ShopTab'));
 const InventoryTab = lazy(() => import('../components/InventoryTab'));
 const LeaderboardTab = lazy(() => import('../components/LeaderboardTab'));
@@ -21,7 +21,7 @@ const Dashboard = () => {
       case 'MAZE':
         return <SutradharMaze onBackToDashboard={() => setActiveTab('HOME')} />;
       case 'MULTIPLAYER':
-        return <ChorSipahi onBackToDashboard={() => setActiveTab('HOME')} />;
+        return <LostArtifactHunt onBackToDashboard={() => setActiveTab('HOME')} />;
       case 'SHOP':
         return <ShopTab />;
       case 'INVENTORY':
@@ -91,10 +91,10 @@ const Dashboard = () => {
                 <span className="text-xs text-cyan-400/60 font-display">Co-op Deduction</span>
               </div>
               <h3 className="text-xl sm:text-2xl text-gold font-display font-bold mb-2 group-hover:gold-text-glow transition-all">
-                Chor Sipahi
+                Lost Artifact Hunt
               </h3>
               <p className="text-xs sm:text-sm text-parchment-dark mb-6 leading-relaxed">
-                Step into ancient Nalanda University. Coordinate with 4-6 players. One player is the <strong className="text-red-500 font-semibold">Chor (Thief)</strong>. Decipher clues and vote out the suspect before time runs out!
+                Explore the ruins of ancient Nalanda University with 3-6 players. One player is secretly the <strong className="text-red-500 font-semibold">Chor (Thief)</strong>. Secure artifacts, follow the clues, and vote out the suspect before time runs out!
               </p>
             </div>
             <button
