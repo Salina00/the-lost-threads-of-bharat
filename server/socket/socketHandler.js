@@ -518,8 +518,9 @@ const socketHandler = (io) => {
     const room = rooms[roomCode];
     if (!room) return;
 
+    console.log(`[Voting Debug] startVotingPhase called for room ${roomCode}`);
     room.gameState = 'VOTING';
-    room.timerVal = 45; // 45 seconds for discussion and voting
+    room.timerVal = 30; // 30 seconds for discussion and voting (as requested)
     room.players.forEach(p => p.votedFor = null);
 
     io.to(roomCode).emit('votingStarted', { timerVal: room.timerVal });
@@ -528,10 +529,12 @@ const socketHandler = (io) => {
     clearInterval(room.timer);
     room.timer = setInterval(() => {
       room.timerVal -= 1;
+      console.log(`[Voting Debug] Timer tick for room ${roomCode}: ${room.timerVal}s remaining`);
       io.to(roomCode).emit('timerUpdate', room.timerVal);
 
       if (room.timerVal <= 0) {
         clearInterval(room.timer);
+        console.log(`[Voting Debug] Timer expired for room ${roomCode}. Calling endVoting`);
         endVoting(roomCode);
       }
     }, 1000);
@@ -545,6 +548,7 @@ const socketHandler = (io) => {
     const room = rooms[roomCode];
     if (!room || room.gameState !== 'VOTING') return;
 
+    console.log(`[Voting Debug] endVoting called for room ${roomCode}`);
     room.gameState = 'VOTING_ENDED'; // transitional state
     clearInterval(room.timer);
 
@@ -567,6 +571,7 @@ const socketHandler = (io) => {
     const votedOutPlayer = votedOutId ? room.players.find(p => p.id === votedOutId) : null;
     const sipahiWin = !!(votedOutPlayer && votedOutPlayer.role === 'CHOR');
 
+    console.log(`[Voting Debug] Vote computed for ${roomCode}: VotedOut: ${votedOutPlayer ? votedOutPlayer.name : 'None'}, SipahiWin: ${sipahiWin}`);
     finishGame(roomCode, { sipahiWin, votedOutPlayer, reason: 'VOTE' });
   }
 
@@ -641,6 +646,8 @@ const socketHandler = (io) => {
     };
     room.finalResults = gameEndedData;
 
+    console.log(`[Voting Debug] finishGame running for ${roomCode}. Emitting roomUpdated and gameEnded...`);
+    io.to(roomCode).emit('roomUpdated', getCleanRoom(room));
     io.to(roomCode).emit('gameEnded', gameEndedData);
 
     setTimeout(() => {
@@ -716,7 +723,9 @@ const socketHandler = (io) => {
 
     bots.forEach(bot => {
       if (Math.random() > 0.7) return;
-      const delay = Math.floor(Math.random() * 25000) + 5000;
+      // Chat message after 3 to 18 seconds, and log it for debug
+      const delay = Math.floor(Math.random() * 15000) + 3000;
+      console.log(`[Voting Debug] Bot ${bot.name} chat scheduled in ${delay}ms`);
 
       setTimeout(() => {
         const currentRoom = roomsRef[roomCode];
@@ -779,7 +788,9 @@ const socketHandler = (io) => {
     if (bots.length === 0) return;
 
     bots.forEach(bot => {
-      const delay = Math.floor(Math.random() * 23000) + 12000;
+      // Vote after 8 to 22 seconds, and log it for debug
+      const delay = Math.floor(Math.random() * 14000) + 8000;
+      console.log(`[Voting Debug] Bot ${bot.name} vote scheduled in ${delay}ms`);
 
       setTimeout(() => {
         const currentRoom = roomsRef[roomCode];

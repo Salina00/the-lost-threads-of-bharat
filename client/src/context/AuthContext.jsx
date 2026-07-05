@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 export const AuthContext = createContext();
@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Refresh User Data (e.g. after shop purchase, game over, revive)
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/auth/me`);
       if (res.data.success) {
@@ -131,7 +131,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.error('Error refreshing user:', err);
     }
-  };
+  }, []);
 
   return (
     <AuthContext.Provider
