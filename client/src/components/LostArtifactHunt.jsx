@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { SocketContext } from '../context/SocketContext';
 import { AuthContext } from '../context/AuthContext';
-import { Send, Users, ShieldAlert, Gem, Coins, LogOut, X, MessageSquare, Clock, Sparkles } from 'lucide-react';
+import { Send, Users, ShieldAlert, Gem, Coins, LogOut, X, MessageSquare, Clock, Sparkles, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 
-const TILE_SIZE = 32; // px per grid cell
+const TILE_SIZE = 32; // px per grid cell on desktop (used as the max cap on mobile)
 const MOVE_COOLDOWN_MS = 130;
 
 const KEY_TO_DELTA = {
@@ -27,6 +27,7 @@ const LostArtifactHunt = ({ onBackToDashboard }) => {
   const [mapGrid, setMapGrid] = useState(null);
   const [timer, setTimer] = useState(0);
   const [livePositions, setLivePositions] = useState({}); // id -> { row, col }
+  const [tileSize, setTileSize] = useState(TILE_SIZE);
 
   // Voting state
   const [chatMessages, setChatMessages] = useState([]);
@@ -134,6 +135,20 @@ const LostArtifactHunt = ({ onBackToDashboard }) => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, room?.gameState]);
 
+  // Shrink the map's tile size to fit small screens instead of overflowing /
+  // forcing horizontal scroll. Desktop keeps the original 32px tiles.
+  useEffect(() => {
+    const cols = mapGrid ? mapGrid[0].length : 15;
+    const computeTileSize = () => {
+      const availableWidth = Math.min(window.innerWidth - 56, 480); // 56px ≈ page + card padding
+      const size = Math.floor(availableWidth / cols);
+      setTileSize(Math.max(20, Math.min(TILE_SIZE, size)));
+    };
+    computeTileSize();
+    window.addEventListener('resize', computeTileSize);
+    return () => window.removeEventListener('resize', computeTileSize);
+  }, [mapGrid]);
+
   // ---------------------------------------------------------------------
   // Movement + collection
   // ---------------------------------------------------------------------
@@ -168,33 +183,62 @@ const LostArtifactHunt = ({ onBackToDashboard }) => {
   const livePositionsRef = useRef(livePositions);
   livePositionsRef.current = livePositions;
 
+  // Shared movement step used by both the keyboard handler and the on-screen
+  // D-pad (mobile). Keeping this in one place means touch and keyboard move
+  // identically and respect the same cooldown.
+  const moveInDirection = useCallback((delta) => {
+    const currentRoom = roomRef.current;
+    if (!currentRoom || currentRoom.gameState !== 'PLAYING' || !socket) return;
+
+    const now = Date.now();
+    if (now - lastMoveRef.current < MOVE_COOLDOWN_MS) return;
+
+    const me = currentRoom.players.find(p => p.id === socket.id);
+    if (!me) return;
+    const pos = livePositionsRef.current[socket.id] || { row: me.row, col: me.col };
+    const newRow = pos.row + delta[0];
+    const newCol = pos.col + delta[1];
+
+    if (!isWalkable(newRow, newCol)) return;
+
+    lastMoveRef.current = now;
+    setLivePositions(prev => ({ ...prev, [socket.id]: { row: newRow, col: newCol } }));
+    socket.emit('playerMoved', { roomCode: currentRoom.roomCode, row: newRow, col: newCol });
+    attemptCollectAt(newRow, newCol);
+  }, [socket, isWalkable, attemptCollectAt]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
-      const currentRoom = roomRef.current;
-      if (!currentRoom || currentRoom.gameState !== 'PLAYING' || !socket) return;
       const delta = KEY_TO_DELTA[e.key];
       if (!delta) return;
-
-      const now = Date.now();
-      if (now - lastMoveRef.current < MOVE_COOLDOWN_MS) return;
-
-      const me = currentRoom.players.find(p => p.id === socket.id);
-      if (!me) return;
-      const pos = livePositionsRef.current[socket.id] || { row: me.row, col: me.col };
-      const newRow = pos.row + delta[0];
-      const newCol = pos.col + delta[1];
-
-      if (!isWalkable(newRow, newCol)) return;
-
-      lastMoveRef.current = now;
-      setLivePositions(prev => ({ ...prev, [socket.id]: { row: newRow, col: newCol } }));
-      socket.emit('playerMoved', { roomCode: currentRoom.roomCode, row: newRow, col: newCol });
-      attemptCollectAt(newRow, newCol);
+      moveInDirection(delta);
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [socket, isWalkable, attemptCollectAt]);
+  }, [moveInDirection]);
+
+  // ---------------------------------------------------------------------
+  // Mobile D-pad (touch controls) — press-and-hold repeats the move
+  // ---------------------------------------------------------------------
+  const dpadIntervalRef = useRef(null);
+
+  const handleDpadPress = (delta) => {
+    moveInDirection(delta); // immediate first step, then repeat while held
+    clearInterval(dpadIntervalRef.current);
+    dpadIntervalRef.current = setInterval(() => moveInDirection(delta), MOVE_COOLDOWN_MS);
+  };
+
+  const handleDpadRelease = () => {
+    clearInterval(dpadIntervalRef.current);
+    dpadIntervalRef.current = null;
+  };
+
+  useEffect(() => {
+    // Safety net: stop any running D-pad repeat if the component unmounts
+    // mid-press (e.g. player navigates away while still touching a button).
+    return () => clearInterval(dpadIntervalRef.current);
+  }, []);
 
   // ---------------------------------------------------------------------
   // Actions
@@ -406,7 +450,7 @@ const LostArtifactHunt = ({ onBackToDashboard }) => {
 
             <div
               className="relative bg-maroon-dark border border-royal-blue-light rounded overflow-hidden"
-              style={{ width: mapGrid[0].length * TILE_SIZE, height: mapGrid.length * TILE_SIZE }}
+              style={{ width: mapGrid[0].length * tileSize, height: mapGrid.length * tileSize }}
             >
               {/* Tiles */}
               {mapGrid.map((rowArr, r) =>
@@ -414,29 +458,29 @@ const LostArtifactHunt = ({ onBackToDashboard }) => {
                   <div
                     key={`${r}-${c}`}
                     className={tile === 1 ? 'absolute bg-royal-blue-dark border border-royal-blue-light/40' : 'absolute bg-maroon-dark/40'}
-                    style={{ top: r * TILE_SIZE, left: c * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE }}
+                    style={{ top: r * tileSize, left: c * tileSize, width: tileSize, height: tileSize }}
                   />
                 ))
               )}
 
               {/* Coins */}
               {(room.coins || []).filter(c => !c.collected).map(coin => (
-                <div key={coin.id} className="absolute flex items-center justify-center text-gold" style={{ top: coin.row * TILE_SIZE, left: coin.col * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE }}>
-                  <Coins size={14} />
+                <div key={coin.id} className="absolute flex items-center justify-center text-gold" style={{ top: coin.row * tileSize, left: coin.col * tileSize, width: tileSize, height: tileSize }}>
+                  <Coins size={Math.max(10, Math.round(tileSize * 0.44))} />
                 </div>
               ))}
 
               {/* Artifacts still on the map */}
               {(room.artifacts || []).filter(a => !a.collected && !a.stolen).map(artifact => (
-                <div key={artifact.id} className="absolute flex items-center justify-center text-cyan-300" style={{ top: artifact.row * TILE_SIZE, left: artifact.col * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE }}>
-                  <Sparkles size={16} />
+                <div key={artifact.id} className="absolute flex items-center justify-center text-cyan-300" style={{ top: artifact.row * tileSize, left: artifact.col * tileSize, width: tileSize, height: tileSize }}>
+                  <Sparkles size={Math.max(11, Math.round(tileSize * 0.5))} />
                 </div>
               ))}
 
               {/* Clues left behind by thefts */}
               {(room.clues || []).filter(c => !c.collected).map(clue => (
-                <div key={clue.id} className="absolute flex items-center justify-center text-red-400 animate-pulse" style={{ top: clue.row * TILE_SIZE, left: clue.col * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE }}>
-                  <ShieldAlert size={14} />
+                <div key={clue.id} className="absolute flex items-center justify-center text-red-400 animate-pulse" style={{ top: clue.row * tileSize, left: clue.col * tileSize, width: tileSize, height: tileSize }}>
+                  <ShieldAlert size={Math.max(10, Math.round(tileSize * 0.44))} />
                 </div>
               ))}
 
@@ -448,7 +492,7 @@ const LostArtifactHunt = ({ onBackToDashboard }) => {
                   <div
                     key={p.id}
                     className={`absolute rounded-full flex items-center justify-center text-[9px] font-bold font-display transition-all duration-100 ${isYou ? 'bg-gold text-maroon-dark border-2 border-white z-10' : 'bg-royal-blue text-parchment border border-gold/50'}`}
-                    style={{ top: pos.row * TILE_SIZE + 3, left: pos.col * TILE_SIZE + 3, width: TILE_SIZE - 6, height: TILE_SIZE - 6 }}
+                    style={{ top: pos.row * tileSize + 3, left: pos.col * tileSize + 3, width: tileSize - 6, height: tileSize - 6 }}
                     title={p.name}
                   >
                     {p.name.charAt(0)}
@@ -457,7 +501,61 @@ const LostArtifactHunt = ({ onBackToDashboard }) => {
               })}
             </div>
 
-            <p className="text-[10px] text-parchment-dark mt-3">Move with WASD or Arrow Keys. Walk onto items to collect them.</p>
+            <p className="text-[10px] text-parchment-dark mt-3 hidden md:block">Move with WASD or Arrow Keys. Walk onto items to collect them.</p>
+            <p className="text-[10px] text-parchment-dark mt-3 md:hidden">Use the pad below to move. Walk onto items to collect them.</p>
+
+            {/* Touch D-pad — mobile only. Keyboard still works if a physical one is attached. */}
+            <div className="md:hidden mt-4 select-none" style={{ touchAction: 'none' }}>
+              <div className="grid grid-cols-3 gap-2 w-[168px] mx-auto">
+                <div />
+                <button
+                  onPointerDown={(e) => { e.preventDefault(); handleDpadPress([-1, 0]); }}
+                  onPointerUp={handleDpadRelease}
+                  onPointerLeave={handleDpadRelease}
+                  onPointerCancel={handleDpadRelease}
+                  className="bg-royal-blue border border-gold/40 active:bg-gold active:text-maroon-dark text-gold rounded-lg h-12 flex items-center justify-center"
+                  aria-label="Move up"
+                >
+                  <ArrowUp size={20} />
+                </button>
+                <div />
+
+                <button
+                  onPointerDown={(e) => { e.preventDefault(); handleDpadPress([0, -1]); }}
+                  onPointerUp={handleDpadRelease}
+                  onPointerLeave={handleDpadRelease}
+                  onPointerCancel={handleDpadRelease}
+                  className="bg-royal-blue border border-gold/40 active:bg-gold active:text-maroon-dark text-gold rounded-lg h-12 flex items-center justify-center"
+                  aria-label="Move left"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <div className="flex items-center justify-center text-parchment-dark/40 text-[9px] font-display">MOVE</div>
+                <button
+                  onPointerDown={(e) => { e.preventDefault(); handleDpadPress([0, 1]); }}
+                  onPointerUp={handleDpadRelease}
+                  onPointerLeave={handleDpadRelease}
+                  onPointerCancel={handleDpadRelease}
+                  className="bg-royal-blue border border-gold/40 active:bg-gold active:text-maroon-dark text-gold rounded-lg h-12 flex items-center justify-center"
+                  aria-label="Move right"
+                >
+                  <ArrowRight size={20} />
+                </button>
+
+                <div />
+                <button
+                  onPointerDown={(e) => { e.preventDefault(); handleDpadPress([1, 0]); }}
+                  onPointerUp={handleDpadRelease}
+                  onPointerLeave={handleDpadRelease}
+                  onPointerCancel={handleDpadRelease}
+                  className="bg-royal-blue border border-gold/40 active:bg-gold active:text-maroon-dark text-gold rounded-lg h-12 flex items-center justify-center"
+                  aria-label="Move down"
+                >
+                  <ArrowDown size={20} />
+                </button>
+                <div />
+              </div>
+            </div>
           </div>
 
           {/* HUD Sidebar */}
