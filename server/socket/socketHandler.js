@@ -385,7 +385,7 @@ const socketHandler = (io) => {
     });
 
     room.gameState = 'PLAYING';
-    room.timerVal = 90; // 90 seconds to explore
+    room.timerVal = 30; // 30 seconds to explore
 
     io.to(roomCode).emit('explorationStarted', {
       mapId: room.mapId,
