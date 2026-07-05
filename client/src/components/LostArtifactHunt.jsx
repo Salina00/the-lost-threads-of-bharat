@@ -165,6 +165,9 @@ const LostArtifactHunt = ({ onBackToDashboard }) => {
     }
   }, [socket]);
 
+  const livePositionsRef = useRef(livePositions);
+  livePositionsRef.current = livePositions;
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       const currentRoom = roomRef.current;
@@ -177,7 +180,7 @@ const LostArtifactHunt = ({ onBackToDashboard }) => {
 
       const me = currentRoom.players.find(p => p.id === socket.id);
       if (!me) return;
-      const pos = livePositions[socket.id] || { row: me.row, col: me.col };
+      const pos = livePositionsRef.current[socket.id] || { row: me.row, col: me.col };
       const newRow = pos.row + delta[0];
       const newCol = pos.col + delta[1];
 
@@ -191,7 +194,7 @@ const LostArtifactHunt = ({ onBackToDashboard }) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [socket, livePositions, isWalkable, attemptCollectAt]);
+  }, [socket, isWalkable, attemptCollectAt]);
 
   // ---------------------------------------------------------------------
   // Actions

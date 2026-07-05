@@ -313,29 +313,30 @@ const socketHandler = (io) => {
 
           if (room.gameState === 'LOBBY') {
             room.players.splice(playerIndex, 1);
-            if (room.players.length === 0) {
+            const humanPlayers = room.players.filter(p => !p.isBot);
+            if (humanPlayers.length === 0) {
               clearInterval(room.timer);
               clearInterval(room.botTimer);
               delete rooms[code];
-              console.log(`Room ${code} deleted (empty)`);
+              console.log(`Room ${code} deleted (empty lobby)`);
             } else {
               if (room.hostId === socket.id) {
-                room.hostId = room.players[0].id;
+                room.hostId = humanPlayers[0].id;
               }
               io.to(code).emit('roomUpdated', getCleanRoom(room));
             }
           } else {
             player.disconnected = true;
 
-            const activePlayers = room.players.filter(p => !p.disconnected);
-            if (activePlayers.length === 0) {
+            const activeHumanPlayers = room.players.filter(p => !p.isBot && !p.disconnected);
+            if (activeHumanPlayers.length === 0) {
               clearInterval(room.timer);
               clearInterval(room.botTimer);
               delete rooms[code];
-              console.log(`Room ${code} deleted (empty during game)`);
+              console.log(`Room ${code} deleted (no active human players left)`);
             } else {
               if (room.hostId === socket.id) {
-                room.hostId = activePlayers[0].id;
+                room.hostId = activeHumanPlayers[0].id;
               }
 
               if (room.gameState === 'VOTING') {
@@ -492,8 +493,9 @@ const socketHandler = (io) => {
   // Exploration is over, either by timeout or an instant-win condition.
   function endExploration(roomCode, reason) {
     const room = rooms[roomCode];
-    if (!room) return;
+    if (!room || room.gameState !== 'PLAYING') return;
 
+    room.gameState = 'EXPLORATION_ENDED'; // transitional state
     clearInterval(room.timer);
     clearInterval(room.botTimer);
 
@@ -541,8 +543,9 @@ const socketHandler = (io) => {
   // End voting phase and compute results
   function endVoting(roomCode) {
     const room = rooms[roomCode];
-    if (!room) return;
+    if (!room || room.gameState !== 'VOTING') return;
 
+    room.gameState = 'VOTING_ENDED'; // transitional state
     clearInterval(room.timer);
 
     const voteCounts = {};
@@ -570,7 +573,7 @@ const socketHandler = (io) => {
   // Shared endgame: award currency, notify clients, reset room after a delay.
   async function finishGame(roomCode, { sipahiWin, votedOutPlayer, reason }) {
     const room = rooms[roomCode];
-    if (!room) return;
+    if (!room || room.gameState === 'RESULTS') return;
 
     room.gameState = 'RESULTS';
     const chorPlayer = room.players.find(p => p.role === 'CHOR');
