@@ -1388,18 +1388,29 @@ const SutradharMaze = ({ onBackToDashboard }) => {
       }
     };
 
-    const loop = () => {
-      const state = gameStateRef.current;
-      state.frame = (state.frame + 1) % 3600;
+    let lastTime = performance.now();
+    const fpsInterval = 1000 / 60; // 60 FPS target
 
-      // Only update positions/collisions if the game is active (not paused for question or level transition)
-      if (isPlaying && !questionModal && !isGameOver && !isGameWon && !isLevelCleared && !state.isPausedForQuestion) {
-        update();
-      }
-      draw();
+    const loop = (currentTime) => {
       animId = requestAnimationFrame(loop);
+
+      const now = currentTime || performance.now();
+      const elapsed = now - lastTime;
+
+      if (elapsed >= fpsInterval) {
+        lastTime = now - (elapsed % fpsInterval);
+
+        const state = gameStateRef.current;
+        state.frame = (state.frame + 1) % 3600;
+
+        // Only update positions/collisions if the game is active (not paused for question or level transition)
+        if (isPlaying && !questionModal && !isGameOver && !isGameWon && !isLevelCleared && !state.isPausedForQuestion) {
+          update();
+        }
+        draw();
+      }
     };
-    loop();
+    animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
   }, [isPlaying, questionModal, isGameOver, isGameWon, isLevelCleared, speedBoost, shieldActive, mapTheme]);
 
