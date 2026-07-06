@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext, API_URL } from '../context/AuthContext';
-import { Heart, Coins, Gem, Zap, Shield, Play, RotateCcw } from 'lucide-react';
+import { Heart, Coins, Gem, Zap, Shield, Play, RotateCcw, HelpCircle } from 'lucide-react';
 
 // ─── FALLBACK QUESTIONS (used when backend API is unreachable e.g. on Vercel
 //     without VITE_API_URL configured) ────────────────────────────────────────
@@ -772,7 +772,7 @@ const SutradharMaze = ({ onBackToDashboard }) => {
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [diamondsEarned, setDiamondsEarned] = useState(0);
   const [fragmentsCollected, setFragmentsCollected] = useState(0);
-  const [hearts, setHearts] = useState(5);
+  const [hearts, setHearts] = useState(user?.hearts || 5);
   const [isGameOver, setIsGameOver] = useState(false);
   const [isGameWon, setIsGameWon] = useState(false);
 
@@ -787,12 +787,15 @@ const SutradharMaze = ({ onBackToDashboard }) => {
   // Power-ups
   const [speedBoost, setSpeedBoost] = useState(false);
   const [shieldActive, setShieldActive] = useState(false);
+  const [ownedShields, setOwnedShields] = useState(0);
+  const [ownedHints, setOwnedHints] = useState(0);
+  const [disabledOptions, setDisabledOptions] = useState([]);
 
   // ── Refs to fix stale-closure bugs in animation loop & timeouts ─────────────
   const scoreRef = useRef(0);
   const coinsRef = useRef(0);
   const diamondsRef = useRef(0);
-  const heartsRef = useRef(5);
+  const heartsRef = useRef(user?.hearts || 5);
 
   const questionTimerInterval = useRef(null);
 
@@ -949,13 +952,13 @@ const SutradharMaze = ({ onBackToDashboard }) => {
     scoreRef.current = 0;
     coinsRef.current = 0;
     diamondsRef.current = 0;
-    heartsRef.current = 5;
+    heartsRef.current = user?.hearts || 5;
 
     setScore(0);
     setCoinsEarned(0);
     setDiamondsEarned(0);
     setFragmentsCollected(0);
-    setHearts(5);
+    setHearts(user?.hearts || 5);
     setIsGameOver(false);
     setIsGameWon(false);
     setIsLevelCleared(false);
@@ -971,6 +974,32 @@ const SutradharMaze = ({ onBackToDashboard }) => {
   useEffect(() => {
     initLevelData();
   }, [level]);
+
+  // Sync starting hearts when user updates/mounts
+  useEffect(() => {
+    if (user) {
+      setHearts(user.hearts);
+      heartsRef.current = user.hearts;
+    }
+  }, [user]);
+
+  // Fetch boosters status on mount and when isPlaying changes
+  const fetchMazeInventory = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/shop/status`);
+      if (res.data.success) {
+        const boosters = res.data.inventory.boosters || [];
+        setOwnedShields(boosters.filter(b => b === 'shield').length);
+        setOwnedHints(boosters.filter(b => b === 'hint').length);
+      }
+    } catch (err) {
+      console.error('Error fetching inventory for maze setup:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMazeInventory();
+  }, [isPlaying]);
 
   // Trigger trivia question on every 2nd collected memory fragment
   useEffect(() => {
@@ -1385,6 +1414,7 @@ const SutradharMaze = ({ onBackToDashboard }) => {
     setSelectedOption(null);
     setQuestionFeedback(null);
     setQuestionTimer(15);
+    setDisabledOptions([]);
 
     // Helper that starts the question timer once a question is ready
     const startQuestion = (question) => {
@@ -1577,20 +1607,52 @@ const SutradharMaze = ({ onBackToDashboard }) => {
                 {getSkinProperties(user?.activeSkin || 'default').name}
               </span>
             </div>
-            <div className="flex items-center justify-between py-1">
-              <span>Dharma Shield (one-hit absorb):</span>
-              <button
-                disabled={shieldActive || (user?.coins || 0) < 25}
-                onClick={async () => {
-                  try {
-                    const res = await axios.post(`${API_URL}/shop/buy-item`, { itemType: 'shield', quantity: 1 });
-                    if (res.data.success) { setShieldActive(true); refreshUser(); }
-                  } catch (err) { console.error(err); }
-                }}
-                className="px-2 py-0.5 bg-royal-blue-light border border-gold text-xs text-gold rounded hover:bg-gold hover:text-maroon-dark transition-all disabled:opacity-50"
-              >
-                {shieldActive ? '✓ Active' : '25 Coins'}
-              </button>
+            <div className="flex flex-col gap-2 py-1.5">
+              <div className="flex items-center justify-between">
+                <span>Dharma Shield (one-hit absorb):</span>
+                <span className="text-xs text-parchment-dark">({ownedShields} owned)</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  disabled={shieldActive || ownedShields <= 0}
+                  onClick={async () => {
+                    try {
+                      const res = await axios.post(`${API_URL}/shop/use-booster`, { boosterType: 'shield' });
+                      if (res.data.success) {
+                        setShieldActive(true);
+                        setOwnedShields(prev => Math.max(0, prev - 1));
+                        refreshUser();
+                      }
+                    } catch (err) {
+                      console.error('Error using shield booster:', err);
+                    }
+                  }}
+                  className="flex-1 py-1 bg-cyan-950/40 border border-cyan-500 text-xs text-cyan-400 rounded hover:bg-cyan-500 hover:text-maroon-dark transition-all disabled:opacity-50 cursor-pointer text-center"
+                >
+                  {shieldActive ? '✓ Active' : 'Use Owned Shield'}
+                </button>
+                <button
+                  disabled={shieldActive || (user?.coins || 0) < 25}
+                  onClick={async () => {
+                    try {
+                      const res = await axios.post(`${API_URL}/shop/buy-item`, { itemType: 'shield', quantity: 1 });
+                      if (res.data.success) {
+                        // Immediately use it
+                        const useRes = await axios.post(`${API_URL}/shop/use-booster`, { boosterType: 'shield' });
+                        if (useRes.data.success) {
+                          setShieldActive(true);
+                          refreshUser();
+                        }
+                      }
+                    } catch (err) {
+                      console.error('Error buying and using shield:', err);
+                    }
+                  }}
+                  className="flex-1 py-1 bg-royal-blue-light border border-gold text-xs text-gold rounded hover:bg-gold hover:text-maroon-dark transition-all disabled:opacity-50 cursor-pointer text-center"
+                >
+                  Buy & Use (25 Coins)
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1748,12 +1810,39 @@ const SutradharMaze = ({ onBackToDashboard }) => {
                   {currentQuestion.question}
                 </h3>
 
+                {ownedHints > 0 && !questionFeedback && (
+                  <button
+                    disabled={disabledOptions.length > 0}
+                    onClick={async () => {
+                      try {
+                        const res = await axios.post(`${API_URL}/shop/use-booster`, { boosterType: 'hint' });
+                        if (res.data.success) {
+                          setOwnedHints(prev => Math.max(0, prev - 1));
+                          refreshUser();
+                          // Eliminate 2 wrong choices
+                          const wrongOpts = currentQuestion.options.filter(opt => opt !== currentQuestion.answer);
+                          const shuffled = [...wrongOpts].sort(() => 0.5 - Math.random());
+                          setDisabledOptions(shuffled.slice(0, 2));
+                        }
+                      } catch (err) {
+                        console.error('Error using hint booster:', err);
+                      }
+                    }}
+                    className="mb-4 px-3 py-1.5 bg-amber-950/40 border border-amber-500 rounded text-xs text-amber-400 font-bold hover:bg-amber-500 hover:text-maroon-dark transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <HelpCircle size={14} /> Use Hint Token ({ownedHints} owned)
+                  </button>
+                )}
+
                 <div className="grid grid-cols-1 gap-3 w-full max-w-md mb-6">
                   {currentQuestion.options.map((opt, idx) => {
                     const isSelected = selectedOption === opt;
                     const isCorrectOpt = opt === currentQuestion.answer;
+                    const isDisabled = disabledOptions.includes(opt);
                     let btnStyle = 'border-royal-blue-light hover:border-gold bg-royal-blue-dark text-parchment';
-                    if (questionFeedback) {
+                    if (isDisabled) {
+                      btnStyle = 'opacity-30 border-transparent bg-gray-950/50 text-gray-500 cursor-not-allowed';
+                    } else if (questionFeedback) {
                       if (isCorrectOpt) btnStyle = 'bg-emerald-800 border-emerald-400 text-white font-bold';
                       else if (isSelected) btnStyle = 'bg-red-800 border-red-400 text-white';
                     } else if (isSelected) btnStyle = 'border-gold bg-royal-blue text-gold font-semibold';
@@ -1761,9 +1850,9 @@ const SutradharMaze = ({ onBackToDashboard }) => {
                     return (
                       <button
                         key={idx}
-                        disabled={questionFeedback !== null}
+                        disabled={questionFeedback !== null || isDisabled}
                         onClick={() => handleTriviaAnswer(opt)}
-                        className="px-4 py-2.5 border rounded text-sm transition-all text-left cursor-pointer disabled:cursor-not-allowed"
+                        className={`px-4 py-2.5 border rounded text-sm transition-all text-left cursor-pointer ${btnStyle}`}
                       >
                         {opt}
                       </button>

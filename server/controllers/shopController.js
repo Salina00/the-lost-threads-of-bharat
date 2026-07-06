@@ -78,6 +78,10 @@ const buyItem = async (req, res) => {
         for (let i = 0; i < qty; i++) {
           inventory.boosters.push('shield');
         }
+      } else if (itemType === 'hint') {
+        for (let i = 0; i < qty; i++) {
+          inventory.boosters.push('hint');
+        }
       }
       await inventory.save();
     }
@@ -187,9 +191,44 @@ const equipSkin = async (req, res) => {
   }
 };
 
+// @desc    Use a booster item from inventory
+// @route   POST /api/shop/use-booster
+// @access  Private
+const useBooster = async (req, res) => {
+  const { boosterType } = req.body; // e.g., 'shield', 'hint'
+
+  try {
+    const inventory = await Inventory.findOne({ userId: req.user.id });
+    if (!inventory) {
+      return res.status(404).json({ success: false, message: 'Inventory not found' });
+    }
+
+    const boosterIndex = inventory.boosters.indexOf(boosterType);
+    if (boosterIndex === -1) {
+      return res.status(400).json({ success: false, message: `You do not have a ${boosterType} in your inventory` });
+    }
+
+    // Remove one instance of this booster
+    inventory.boosters.splice(boosterIndex, 1);
+    await inventory.save();
+
+    res.json({
+      success: true,
+      message: `Used one ${boosterType} booster!`,
+      inventory: {
+        boosters: inventory.boosters
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 module.exports = {
   getShopStatus,
   buyItem,
   buySkin,
-  equipSkin
+  equipSkin,
+  useBooster
 };

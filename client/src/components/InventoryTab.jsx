@@ -70,6 +70,7 @@ const InventoryTab = () => {
 
   // Counts of boosters
   const shieldCount = boosters.filter(b => b === 'shield').length;
+  const hintCount = boosters.filter(b => b === 'hint').length;
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4">
@@ -112,7 +113,7 @@ const InventoryTab = () => {
               </div>
             </div>
             <span className="text-xl font-bold font-display text-gold bg-amber-950/60 border border-gold/30 px-3 py-1 rounded">
-              {user?.hearts || 0} Hearts
+              {hintCount}
             </span>
           </div>
 
