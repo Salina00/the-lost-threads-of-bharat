@@ -44,7 +44,7 @@ const InventoryTab = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64 text-gold font-display animate-pulse">
-        Opening Treasury Chest...
+        Loading Inventory...
       </div>
     );
   }
@@ -73,7 +73,7 @@ const InventoryTab = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4">
-      <h2 className="text-2xl text-gold font-display mb-6 border-b border-royal-blue-light pb-2">Treasury & Inventory</h2>
+      <h2 className="text-2xl text-gold font-display mb-6 border-b border-royal-blue-light pb-2">Inventory</h2>
 
       {message && (
         <div className="p-3 rounded text-sm mb-6 text-center font-semibold bg-emerald-900/50 border border-emerald-500 text-emerald-200">

@@ -61,7 +61,7 @@ const Auth = () => {
         {/* Card */}
         <div className="heritage-card p-8 rounded-lg border gold-border">
           <h2 className="text-xl text-gold font-display mb-6 text-center">
-            {isLogin ? 'Enter the Chronicles' : 'Inscribe your Name'}
+            {isLogin ? 'Log In' : 'Sign Up'}
           </h2>
 
           {(authError || error) && (
@@ -74,7 +74,7 @@ const Auth = () => {
             
             {!isLogin && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-parchment-dark font-display font-medium">Sutradhar Name</label>
+                <label className="text-xs text-parchment-dark font-display font-medium">User Name</label>
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-3 text-parchment-dark" />
                   <input
@@ -90,7 +90,7 @@ const Auth = () => {
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-parchment-dark font-display font-medium">Email Inscription</label>
+              <label className="text-xs text-parchment-dark font-display font-medium">Email</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-3 text-parchment-dark" />
                 <input
@@ -105,7 +105,7 @@ const Auth = () => {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-parchment-dark font-display font-medium">Secret Keyphrase</label>
+              <label className="text-xs text-parchment-dark font-display font-medium">Password</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-3 text-parchment-dark" />
                 <input
@@ -125,7 +125,7 @@ const Auth = () => {
               className="btn-heritage py-2.5 text-sm mt-4 w-full flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
               <KeyRound size={16} />
-              {loading ? 'Consulting Inscriptions...' : isLogin ? 'Authenticate' : 'Inscribe Account'}
+              {loading ? 'Logging in...' : isLogin ? 'Log In' : 'Sign Up'}
             </button>
 
           </form>
@@ -133,7 +133,7 @@ const Auth = () => {
           {/* Toggle */}
           <div className="text-center mt-6 pt-4 border-t border-royal-blue-light text-xs">
             <span className="text-parchment-dark mr-1.5">
-              {isLogin ? 'New to the realm of memories?' : 'Already authenticated?'}
+              {isLogin ? 'New to the game?' : 'Already have an account?'}
             </span>
             <button
               onClick={() => {
@@ -142,7 +142,7 @@ const Auth = () => {
               }}
               className="text-gold font-display font-bold hover:underline"
             >
-              {isLogin ? 'Inscribe Name' : 'Login'}
+              {isLogin ? 'Create Account' : 'Login'}
             </button>
           </div>
 

@@ -1668,7 +1668,7 @@ const SutradharMaze = ({ onBackToDashboard }) => {
               <div className="fixed inset-0 bg-maroon-dark/95 backdrop-blur-md flex flex-col items-center justify-center p-4 z-50 animate-fade-in">
                 <div className="w-12 h-12 rounded-full border-2 border-gold border-t-transparent animate-spin mb-4"></div>
                 <div className="text-amber-300 text-xs font-display tracking-widest uppercase mb-1 animate-pulse">
-                  ✦ Decoding Ancient Inscriptions ✦
+                  ✦ Loading Trivia Question ✦
                 </div>
                 <p className="text-xs text-parchment-dark">Consulting the archives...</p>
               </div>

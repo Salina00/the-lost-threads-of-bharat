@@ -160,7 +160,7 @@ const SutradharGuide = ({ activeTab }) => {
               {mode === 'FACT' && (
                 <div>
                   <span className="text-[9px] text-amber-400 font-display uppercase tracking-wider block mb-1">
-                    ✦ Heritage Chronicle ✦
+                    ✦ Heritage Fact ✦
                   </span>
                   <p className="italic">"{HERITAGE_FACTS[factIndex]}"</p>
                 </div>

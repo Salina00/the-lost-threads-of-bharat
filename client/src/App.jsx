@@ -15,7 +15,7 @@ const AppContent = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-maroon-dark text-gold font-display gap-4">
         <div className="w-12 h-12 rounded-full border-2 border-gold border-t-transparent animate-spin"></div>
-        <p className="text-xs uppercase tracking-widest animate-pulse">Consulting the Sutradhar...</p>
+        <p className="text-xs uppercase tracking-widest animate-pulse">Loading...</p>
       </div>
     );
   }
@@ -28,7 +28,7 @@ const AppContent = () => {
     <Suspense fallback={
       <div className="min-h-screen flex flex-col items-center justify-center bg-maroon-dark text-gold font-display gap-4">
         <div className="w-12 h-12 rounded-full border-2 border-gold border-t-transparent animate-spin"></div>
-        <p className="text-xs uppercase tracking-widest animate-pulse">Loading scrolls...</p>
+        <p className="text-xs uppercase tracking-widest animate-pulse">Loading...</p>
       </div>
     }>
       {user ? <Dashboard /> : <Auth />}

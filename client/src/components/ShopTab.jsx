@@ -81,7 +81,7 @@ const ShopTab = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64 text-gold font-display animate-pulse">
-        Loading the Merchant's Bazaar...
+        Loading Shop...
       </div>
     );
   }

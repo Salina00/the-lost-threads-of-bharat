@@ -37,7 +37,7 @@ const ProfileTab = () => {
 
         {/* Stats Grid */}
         <h3 className="text-sm font-display text-gold mb-3 flex items-center gap-1.5">
-          <Award size={16} /> Player Chronicle
+          <Award size={16} /> Player Stats
         </h3>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">

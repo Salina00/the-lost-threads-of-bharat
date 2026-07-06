@@ -27,7 +27,7 @@ const LeaderboardTab = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64 text-gold font-display animate-pulse">
-        Gazing at the Inscriptions of Honor...
+        Loading Leaderboard...
       </div>
     );
   }
@@ -44,7 +44,7 @@ const LeaderboardTab = () => {
     <div className="w-full max-w-4xl mx-auto p-4">
       <div className="text-center mb-8">
         <h2 className="text-3xl text-gold font-display flex items-center justify-center gap-2">
-          <Trophy className="text-gold" /> Scroll of Honor
+          <Trophy className="text-gold" /> Leaderboard
         </h2>
         <p className="text-xs text-parchment-dark mt-1">Celebrating Bharat's finest memory restorers</p>
       </div>
