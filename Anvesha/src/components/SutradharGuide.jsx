@@ -12,20 +12,24 @@ const HERITAGE_FACTS = [
 
 const HERITAGE_RIDDLES = [
   {
-    question: "I have no voice, yet I speak of the past. I have no eyes, yet I show you ancient paths. What am I?",
-    answer: "An ancient manuscript (Pothi) or palm-leaf scroll."
+    question: "I am made of paper or leaves, filled with ancient stories, and tell you about the past. What am I?",
+    hint: "It has pages and is read to gain knowledge.",
+    answer: "A book or manuscript (Pothi)."
   },
   {
-    question: "Carved from a single giant basalt cliff, I represent Shiva's celestial abode. No stones were added to me, only cut away. What temple am I?",
-    answer: "The Kailash Temple at Ellora Caves."
+    question: "I am a famous temple carved out of a single giant rock cliff, dedicated to Lord Shiva. What temple am I?",
+    hint: "Located in Ellora, Maharashtra, carved top-down.",
+    answer: "Kailash Temple (Ellora)."
   },
   {
-    question: "Built like an inverted stepwell temple leading down to the water, I am adorned with intricate carvings of Vishnu's ten avatars. What am I?",
-    answer: "Rani ki Vav (The Queen's Stepwell) in Patan, Gujarat."
+    question: "I am a famous historic stepwell in Gujarat featured on the Indian 100 rupee note. What am I?",
+    hint: "Adorned with Vishnu's 10 avatars, located in Patan.",
+    answer: "Rani ki Vav (Queen's Stepwell)."
   },
   {
-    question: "I am a thread that binds, but I am not made of cotton. I hold the story together, but I am not a book. In this quest to save Bharat's history, I guide you. Who am I?",
-    answer: "The Sutradhar (the narrator / thread-holder)."
+    question: "I am the narrator of this game who guides you through the threads of history. Who am I?",
+    hint: "Literally means 'thread-holder' in Sanskrit.",
+    answer: "The Sutradhar."
   }
 ];
 
@@ -35,6 +39,7 @@ const SutradharGuide = ({ activeTab }) => {
   const [factIndex, setFactIndex] = useState(0);
   const [riddleIndex, setRiddleIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const [isPulsing, setIsPulsing] = useState(true);
 
   // Trigger guidance popover automatically on first load to welcome the user,
@@ -53,6 +58,7 @@ const SutradharGuide = ({ activeTab }) => {
   useEffect(() => {
     setMode('GUIDE');
     setShowAnswer(false);
+    setShowHint(false);
   }, [activeTab]);
 
   const handleOpenToggle = () => {
@@ -85,6 +91,7 @@ const SutradharGuide = ({ activeTab }) => {
   const handleNextRiddle = () => {
     setRiddleIndex((prev) => (prev + 1) % HERITAGE_RIDDLES.length);
     setShowAnswer(false);
+    setShowHint(false);
   };
 
   return (
@@ -173,17 +180,31 @@ const SutradharGuide = ({ activeTab }) => {
                   </span>
                   <p className="font-medium text-parchment">"{HERITAGE_RIDDLES[riddleIndex].question}"</p>
                   
+                  {showHint && (
+                    <p className="text-[11px] text-amber-300 italic">Clue: {HERITAGE_RIDDLES[riddleIndex].hint}</p>
+                  )}
+
                   {showAnswer ? (
                     <div className="mt-1 bg-royal-blue/60 border border-gold/20 p-2 rounded text-emerald-300 font-semibold">
                       Answer: {HERITAGE_RIDDLES[riddleIndex].answer}
                     </div>
                   ) : (
-                    <button
-                      onClick={() => setShowAnswer(true)}
-                      className="mt-1 text-[10px] text-gold hover:text-gold-light underline text-left font-display font-bold uppercase tracking-wider cursor-pointer"
-                    >
-                      Reveal Answer
-                    </button>
+                    <div className="flex gap-4">
+                      {!showHint && (
+                        <button
+                          onClick={() => setShowHint(true)}
+                          className="mt-1 text-[10px] text-cyan-300 hover:text-cyan-200 underline text-left font-display font-bold uppercase tracking-wider cursor-pointer"
+                        >
+                          Show Hint
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowAnswer(true)}
+                        className="mt-1 text-[10px] text-gold hover:text-gold-light underline text-left font-display font-bold uppercase tracking-wider cursor-pointer"
+                      >
+                        Reveal Answer
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
